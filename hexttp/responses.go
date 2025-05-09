@@ -4,14 +4,6 @@ import (
 	"net/http"
 )
 
-type LogLevel string
-
-const (
-	LogNone  LogLevel = ""
-	LogWarn  LogLevel = "warn"
-	LogError LogLevel = "error"
-)
-
 type HTTPResponse struct {
 	StatusCode int
 	Body       any

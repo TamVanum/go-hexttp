@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"log/slog"
 	"net/http"
+	"time"
 )
 
 type APIFunc func(w http.ResponseWriter, r *http.Request) *HTTPResponse
@@ -17,14 +18,7 @@ func Make(h APIFunc) http.HandlerFunc {
 		}
 
 		writeResponse(w, resp)
-
-		switch resp.LogLevel {
-		case LogError:
-			slog.Error("HTTP API error", "status", resp.StatusCode, "path", r.URL.Path, "body", resp.Body)
-		case LogWarn:
-			slog.Warn("Client error", "status", resp.StatusCode, "path", r.URL.Path, "body", resp.Body)
-		}
-
+		logResponse(r, resp)
 	}
 }
 
@@ -37,6 +31,18 @@ type SuccessBodyResponse struct {
 type ErrorBodyResponse struct {
 	Status string `json:"status"`
 	Msg    any    `json:"msg"`
+}
+
+func logResponse(r *http.Request, resp *HTTPResponse) {
+	requestID, _ := r.Context().Value(requestIDKey).(string)
+	start, _ := r.Context().Value(requestStart).(time.Time)
+	duration := time.Since(start)
+	switch resp.LogLevel {
+	case LogError:
+		slog.Error("HTTP API error", "RequestID", requestID, "duration", duration, "status", resp.StatusCode, "path", r.URL.Path, "body", resp.Body)
+	case LogWarn:
+		slog.Warn("Client error", "RequestID", requestID, "duration", duration, "status", resp.StatusCode, "path", r.URL.Path, "body", resp.Body)
+	}
 }
 
 func writeResponse(w http.ResponseWriter, resp *HTTPResponse) {

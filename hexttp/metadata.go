@@ -10,10 +10,10 @@ import (
 
 type contextKey string
 
-const RequestIDKey contextKey = "requestID"
+const requestIDKey contextKey = "requestID"
 const requestStart contextKey = "requestStart"
 
-func MetadataMiddleware(next http.Handler) http.Handler {
+func MetaDataCollector(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()
 
@@ -22,7 +22,7 @@ func MetadataMiddleware(next http.Handler) http.Handler {
 			reqID = uuid.New().String()
 		}
 
-		ctx := context.WithValue(r.Context(), RequestIDKey, reqID)
+		ctx := context.WithValue(r.Context(), requestIDKey, reqID)
 		ctx = context.WithValue(ctx, requestStart, start)
 		r = r.WithContext(ctx)
 
