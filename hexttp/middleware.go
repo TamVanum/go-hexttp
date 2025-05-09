@@ -19,13 +19,24 @@ func Make(h APIFunc) http.HandlerFunc {
 		writeResponse(w, resp)
 
 		switch resp.LogLevel {
-		case "error":
+		case LogError:
 			slog.Error("HTTP API error", "status", resp.StatusCode, "path", r.URL.Path, "body", resp.Body)
-		case "warn":
+		case LogWarn:
 			slog.Warn("Client error", "status", resp.StatusCode, "path", r.URL.Path, "body", resp.Body)
 		}
 
 	}
+}
+
+type SuccessBodyResponse struct {
+	Status string         `json:"status"`
+	Data   any            `json:"data,omitempty"`
+	Meta   map[string]any `json:"meta,omitempty"`
+}
+
+type ErrorBodyResponse struct {
+	Status string `json:"status"`
+	Msg    any    `json:"msg"`
 }
 
 func writeResponse(w http.ResponseWriter, resp *HTTPResponse) {
@@ -36,19 +47,17 @@ func writeResponse(w http.ResponseWriter, resp *HTTPResponse) {
 		return
 	}
 
-	var responseBody map[string]any
-
+	var output any
 	if resp.StatusCode >= 400 {
-		responseBody = map[string]any{
-			"status": http.StatusText(resp.StatusCode),
-			"msg":    resp.Body,
+		output = ErrorBodyResponse{
+			Status: http.StatusText(resp.StatusCode),
+			Msg:    resp.Body,
 		}
 	} else {
-		responseBody = map[string]any{
-			"status": http.StatusText(resp.StatusCode),
-			"data":   resp.Body,
+		output = SuccessBodyResponse{
+			Status: http.StatusText(resp.StatusCode),
+			Data:   resp.Body,
 		}
 	}
-
-	_ = json.NewEncoder(w).Encode(responseBody)
+	_ = json.NewEncoder(w).Encode(output)
 }
